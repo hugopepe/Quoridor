@@ -1,0 +1,428 @@
+namespace ca.mcgill.ecse223.quoridor.controller;
+
+use QuoridorGame.ump;
+
+
+class PawnBehavior {
+
+	depend ca.mcgill.ecse223.quoridor.application.QuoridorApplication;
+	depend ca.mcgill.ecse223.quoridor.model.*;
+	depend ca.mcgill.ecse223.quoridor.view.*;
+
+    0..1 -> 0..1 Game currentGame;
+    0..1 -> 1 Player player;
+    
+    Boolean illegal = false;
+
+    pawnSM {
+    
+        
+	    moving { 
+      
+
+	  		vertical{ 
+	  		
+	  			start{
+                    
+                 	[isAtDownBorder()] -> atDownBorder;
+                 	[isAtUpBorder()] -> atUpBorder;
+                    [isAtMiddleV()] -> atMiddleV;
+                     
+                  }
+	  		
+				atMiddleV{  
+	           
+		           	//legal step
+		           	moveUp[stepAwayFromUpBorder() && isLegalStep(MoveDirection.North)] / { step(MoveDirection.North); } -> atUpBorder;
+                    moveUp[!stepAwayFromUpBorder() && isLegalStep(MoveDirection.North)] / { step(MoveDirection.North); } -> atMiddleV;
+		        	moveDown[stepAwayFromDownBorder() && isLegalStep(MoveDirection.South)] / { step(MoveDirection.South); } -> atDownBorder;
+                    moveDown[!stepAwayFromDownBorder() && isLegalStep(MoveDirection.South)] / { step(MoveDirection.South); } -> atMiddleV;
+                  
+                  	//legal jump
+                  	moveUp[jumpAwayFromUpBorder() && isLegalJump(MoveDirection.North)]  / { jump(MoveDirection.North); } -> atUpBorder;
+                    moveUp[!jumpAwayFromUpBorder() && !stepAwayFromUpBorder() && isLegalJump(MoveDirection.North)] / { jump(MoveDirection.North); } -> atMiddleV;
+		        	moveDown[jumpAwayFromDownBorder() && isLegalJump(MoveDirection.South)] / { jump(MoveDirection.South); } -> atDownBorder;
+                    moveDown[!jumpAwayFromDownBorder() && !stepAwayFromDownBorder() && isLegalJump(MoveDirection.South)] / { jump(MoveDirection.South); } -> atMiddleV;
+                  
+                  	//legal diagonal jump
+                  	moveUpLeft[stepAwayFromUpBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)]  -> atUpBorder;
+                  	moveUpLeft[!stepAwayFromUpBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] -> atMiddleV;
+                  	moveUpRight[stepAwayFromUpBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] -> atUpBorder;
+                  	moveUpRight[!stepAwayFromUpBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] -> atMiddleV;
+                  	moveDownLeft[stepAwayFromDownBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] -> atDownBorder;
+                  	moveDownLeft[!stepAwayFromDownBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] -> atMiddleV;
+                  	moveDownRight[stepAwayFromDownBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] -> atDownBorder;
+                  	moveDownRight[!stepAwayFromDownBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] -> atMiddleV;
+                  	
+		  			//illegal 
+			     	moveUp[!isLegalStep(MoveDirection.North) && !isLegalJump(MoveDirection.North)]/ { illegalMove(); } -> atMiddleV;
+					moveDown[!isLegalStep(MoveDirection.South) && !isLegalJump(MoveDirection.South)]/ { illegalMove(); } -> atMiddleV;
+	       			
+	       			moveUpLeft[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] / { illegalMove(); } -> atMiddleV;
+	       			moveUpRight[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] / { illegalMove(); } -> atMiddleV;
+	       			moveDownLeft[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / { illegalMove(); } -> atMiddleV;
+	       			moveDownRight[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / { illegalMove(); } -> atMiddleV;
+	       			
+	        	} 	  		
+	        
+	        	atDownBorder {  
+		         	
+		          	//legal step
+		           	moveUp[isLegalStep(MoveDirection.North)] / { step(MoveDirection.North); } -> atMiddleV;
+		           	
+		           	//legal jump
+		           	moveUp[isLegalJump(MoveDirection.North) ] / { jump(MoveDirection.North); } -> atMiddleV;
+		           	
+		           	//legal diagonal jump
+                  	moveUpLeft[isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] -> atMiddleV;
+                  	moveUpRight[isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] -> atMiddleV;
+		           	
+		       		//illegal
+		           	moveUp[!isLegalStep(MoveDirection.North) && !isLegalJump(MoveDirection.North)] / { illegalMove(); } -> atDownBorder;
+                    moveDown / { illegalMove(); }  -> atDownBorder; 
+                    
+                    moveUpLeft[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] / { illegalMove(); } -> atMiddleV;
+	       			moveUpRight[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] / { illegalMove(); } -> atMiddleV;
+	       			moveDownLeft / { illegalMove(); } -> atDownBorder;
+	       			moveDownRight / { illegalMove(); } -> atDownBorder;
+                  	  		
+		   		}
+		   		
+		   		atUpBorder { 
+		        	//legal	step
+		        	moveDown[isLegalStep(MoveDirection.South)] / { step(MoveDirection.South); }  -> atMiddleV;  
+		        	
+		        	//legal	jump
+		        	moveDown[isLegalJump(MoveDirection.South)] / { jump(MoveDirection.South); }  -> atMiddleV;  
+		           	
+		           	//legal diagonal jump
+                  	moveDownLeft[isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)]  -> atMiddleV;
+                  	moveDownRight[isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] -> atMiddleV;
+			           	
+		        
+		           	//illegal	
+		           	moveDown[!isLegalStep(MoveDirection.South) && !isLegalJump(MoveDirection.South)] / {  illegalMove(); } -> atUpBorder; 
+		           	moveUp / { illegalMove(); } -> atUpBorder;
+		           	
+		           	moveDownLeft[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / { illegalMove(); } -> atUpBorder;
+	       			moveDownRight[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / { illegalMove(); } -> atUpBorder;
+	       			moveUpLeft / { illegalMove(); } -> atUpBorder;
+	       			moveUpRight / { illegalMove(); } -> atUpBorder;
+	
+		         }  
+		                     
+	     	} 
+	      
+	     	|| 
+	          
+	       	horizontal {  
+	       	
+	       		start{
+                    
+                 	[isAtLeftBorder()] -> atLeftBorder;
+                 	[isAtRightBorder()] -> atRightBorder;
+                    [isAtMiddleH()] -> atMiddleH;
+                    
+                  }
+	       	
+				atLeftBorder {  
+				
+					//legal step
+		        	moveRight[isLegalStep(MoveDirection.East)] / { step(MoveDirection.East); } -> atMiddleH;
+		        	
+		        	//legal jump
+		        	moveRight[isLegalJump(MoveDirection.East)] / { jump(MoveDirection.East); } -> atMiddleH;
+		        	
+		        	//legal diagonal jump
+                  	moveDownRight[isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / {diagonalJump(MoveDirection.South, MoveDirection.East); } -> atMiddleH;
+                  	moveUpRight[isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)]/ {diagonalJump(MoveDirection.North, MoveDirection.East); } -> atMiddleH;
+		        	
+		         	//illegal
+		         	moveRight[!isLegalStep(MoveDirection.East) && !isLegalJump(MoveDirection.East)] / { illegalMove(); } -> atLeftBorder;	
+		  			moveLeft / { illegalMove(); }  -> atLeftBorder; 
+		  			
+		  			moveUpRight[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] / { illegalMove(); } -> atLeftBorder;
+	       			moveDownRight[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / { illegalMove(); } -> atLeftBorder;
+	       			moveDownLeft / { illegalMove(); } -> atLeftBorder;
+	       			moveUpLeft / { illegalMove(); } -> atLeftBorder;
+		         	 
+		       	} 
+		       
+	         	atRightBorder {  
+	         	
+		         	//legal step
+		        	moveLeft[isLegalStep(MoveDirection.West)] / { step(MoveDirection.West); }  -> atMiddleH;  
+		        	
+		        	//legal jump
+		        	moveLeft[isLegalJump(MoveDirection.West)] / { jump(MoveDirection.West); }  -> atMiddleH;  
+		        	
+		       		//legal diagonal jump
+                  	moveDownLeft[isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / {diagonalJump(MoveDirection.South, MoveDirection.West); } -> atMiddleH;
+                  	moveUpLeft[isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)]/ {diagonalJump(MoveDirection.North, MoveDirection.West); } -> atMiddleH;
+		        	
+		        	
+		           	//illegal
+			       	moveLeft[!isLegalStep(MoveDirection.West) && !isLegalJump(MoveDirection.West)] / { illegalMove(); }  -> atRightBorder;  
+					moveRight / { illegalMove(); } -> atRightBorder;
+						
+		  			moveUpLeft[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] / { illegalMove(); } -> atRightBorder;
+	       			moveDownLeft[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / { illegalMove(); } -> atRightBorder;
+	       			moveDownRight / { illegalMove(); } -> atRightBorder;
+	       			moveUpRight / { illegalMove(); } -> atRightBorder;
+	       			
+		 		}  
+	         
+	         	atMiddleH {
+	         	
+		         	//legal step
+		     		moveRight[stepAwayFromRightBorder() && isLegalStep(MoveDirection.East)] / { step(MoveDirection.East); } -> atRightBorder;
+                    moveRight[!stepAwayFromRightBorder() && isLegalStep(MoveDirection.East)] / { step(MoveDirection.East); } -> atMiddleH;
+                    moveLeft[stepAwayFromLeftBorder() && isLegalStep(MoveDirection.West)] / { step(MoveDirection.West); } -> atLeftBorder;
+                    moveLeft[!stepAwayFromLeftBorder() && isLegalStep(MoveDirection.West)] / { step(MoveDirection.West); } -> atMiddleH;
+		         	
+		         	//legal jump
+		         	moveRight[jumpAwayFromRightBorder() && isLegalJump(MoveDirection.East)] / { jump(MoveDirection.East); } -> atRightBorder;
+                    moveRight[!jumpAwayFromRightBorder() && !stepAwayFromRightBorder() && isLegalJump(MoveDirection.East)] / { jump(MoveDirection.East); } -> atMiddleH;
+                    moveLeft[jumpAwayFromLeftBorder() && isLegalJump(MoveDirection.West)] / { jump(MoveDirection.West); } -> atLeftBorder;
+                    moveLeft[!jumpAwayFromLeftBorder() && !stepAwayFromLeftBorder() && isLegalJump(MoveDirection.West)] / { jump(MoveDirection.West); } -> atMiddleH;
+		         	
+		         	//legal diagonal jump
+                  	moveUpLeft[stepAwayFromLeftBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] / {diagonalJump(MoveDirection.North, MoveDirection.West); } -> atLeftBorder;
+                  	moveUpLeft[!stepAwayFromLeftBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] / {diagonalJump(MoveDirection.North,MoveDirection.West); } -> atMiddleH;
+                  	moveUpRight[stepAwayFromRightBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] / {diagonalJump(MoveDirection.North,MoveDirection.East); } -> atRightBorder;
+                  	moveUpRight[!stepAwayFromRightBorder() && isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)]/ {diagonalJump(MoveDirection.North,MoveDirection.East); } -> atMiddleH;
+                  	moveDownLeft[stepAwayFromLeftBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / {diagonalJump(MoveDirection.South,MoveDirection.West); } -> atLeftBorder;
+                  	moveDownLeft[!stepAwayFromLeftBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / {diagonalJump(MoveDirection.South,MoveDirection.West); } -> atMiddleH;
+                  	moveDownRight[stepAwayFromRightBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / {diagonalJump(MoveDirection.South,MoveDirection.East); } -> atRightBorder;
+                  	moveDownRight[!stepAwayFromRightBorder() && isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / {diagonalJump(MoveDirection.South,MoveDirection.East); } -> atMiddleH;
+                  	
+		         	//illegal
+		    		moveRight[!isLegalStep(MoveDirection.East) && !isLegalJump(MoveDirection.East)] / { illegalMove(); } -> atMiddleH;
+		      		moveLeft[!isLegalStep(MoveDirection.West) && !isLegalJump(MoveDirection.West)] / { illegalMove(); } -> atMiddleH;
+		         	       			
+	       			moveUpLeft[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.West)] / { illegalMove(); } -> atMiddleH;
+	       			moveUpRight[!isLegalDiagonalJump(MoveDirection.North,MoveDirection.East)] / { illegalMove(); } -> atMiddleH;
+	       			moveDownLeft[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.West)] / { illegalMove(); } -> atMiddleH;
+	       			moveDownRight[!isLegalDiagonalJump(MoveDirection.South,MoveDirection.East)] / { illegalMove(); } -> atMiddleH;
+	       			
+		           		
+		   		}
+		   		
+	      	} 
+	
+	    } 
+    
+	}
+
+	/**************************************/
+    /* HELPER METHODS 					  */									  
+    /**************************************/
+ 
+	//Returns the current row number of the pawn
+	private int getCurrentPawnRow() {
+		Game currentGame = QuoridorApplication.getQuoridor().getCurrentGame();
+		int currentPawnRow;
+		if (player.equals(currentGame.getWhitePlayer())) {
+			currentPawnRow = currentGame.getCurrentPosition().getWhitePosition().getTile().getRow();
+		} else
+			currentPawnRow = currentGame.getCurrentPosition().getBlackPosition().getTile().getRow();
+
+		return currentPawnRow;
+	}
+
+	//Returns the current column number of the pawn
+	private int getCurrentPawnColumn() {
+
+		Game currentGame = QuoridorApplication.getQuoridor().getCurrentGame();
+		int currentPawnCol;
+
+		if (player.equals(currentGame.getWhitePlayer())) {
+			currentPawnCol = currentGame.getCurrentPosition().getWhitePosition().getTile().getColumn();
+		} else
+			currentPawnCol = currentGame.getCurrentPosition().getBlackPosition().getTile().getColumn();
+		return currentPawnCol;
+
+	}
+    
+    
+    /**************************************/
+    /* GUARDS							  */					  
+    /**************************************/
+    
+    // Returns if the right border is one step right
+	private boolean stepAwayFromRightBorder(){
+	   	return getCurrentPawnColumn()== 8;
+  	}	
+
+    // Returns if the left border is one step left
+   	private boolean stepAwayFromLeftBorder(){
+	   	return getCurrentPawnColumn()== 2;
+  	}
+
+ 	// Returns if the upper border is one step up
+   	private boolean stepAwayFromUpBorder(){
+	   	return getCurrentPawnRow() == 2;
+  	}
+  	
+    // Returns if the lower border is one step down
+   	private boolean stepAwayFromDownBorder(){
+	  	return getCurrentPawnRow() == 8;
+  	}
+  	
+  	// Returns if the right border is one jump up
+  	private boolean jumpAwayFromRightBorder(){
+	   	return getCurrentPawnColumn()== 7;
+  	}	
+
+    // Returns if the left border is one jump left
+   	private boolean jumpAwayFromLeftBorder(){
+	   	return getCurrentPawnColumn()== 3;
+  	}
+  	
+    // Returns if the upper border is one jump up
+   	private boolean jumpAwayFromUpBorder(){
+	   	return getCurrentPawnRow() == 3;
+  	}
+
+	// Returns if the lower border is one jump down
+   	private boolean jumpAwayFromDownBorder(){
+	  	return getCurrentPawnRow() == 7;
+  	}
+  	
+  	// Returns if a border is one step in the given direction
+  	private boolean stepAwayFromBorder(MoveDirection dir) {
+  		switch (dir) {
+			case North:
+				return stepAwayFromUpBorder();
+			case South:
+				return stepAwayFromDownBorder();
+			case East:
+				return stepAwayFromRightBorder();
+			case West:
+				return stepAwayFromLeftBorder();
+			default:
+				throw new RuntimeException("Unsupposted move direction provided");
+		}
+  	}
+  	
+    // Returns if it is legal to step in the given direction
+    private boolean isLegalStep(MoveDirection dir) {
+		Tile currentTile = null;
+		try {
+			currentTile = QuoridorController.getPlayerPosition(player).getTile();
+		} catch (InvalidInputException e) {
+			e.printStackTrace();
+		}    	
+		if(QuoridorController.wallInTheWay(currentTile, dir) || QuoridorController.pawnInTheWay(dir)) { 
+	    		return false; 	
+	    } else return true;		
+    }
+    // Returns if it is legal to jump in the given direction
+    private boolean isLegalJump(MoveDirection dir) {
+		Tile currentTile = null;
+		try {
+			currentTile = QuoridorController.getPlayerPosition(player).getTile();
+		} catch (InvalidInputException e) {
+			e.printStackTrace();
+		}    	
+		if(QuoridorController.wallInTheWayForJump(currentTile, dir) || !QuoridorController.pawnInTheWay(dir) || stepAwayFromBorder(dir))  { 
+    		return false; 	
+    	} else return true;	
+    }
+    
+    // Returns if it is legal to jump diagonally in the given direction
+    private boolean isLegalDiagonalJump(MoveDirection vDir, MoveDirection hDir) {
+    	//System.out.println("====legalDiagJump: " + QuoridorController.legalDiagonalJump(player, vDir, hDir));
+ 
+		return QuoridorController.legalDiagonalJump(player, vDir, hDir);
+    }
+    
+   	// Returns if the pawn is at left the leftmost column on the board
+    private boolean isAtLeftBorder() {
+    	if (getCurrentPawnColumn() == 1) {
+    		return true;
+    	} else return false;
+    }
+    
+    // Returns if the pawn is at left the rightmost column on the board
+    private boolean isAtRightBorder() {
+    	if (getCurrentPawnColumn() == 9) {
+    		return true;
+    	} else return false;
+    }
+    
+    // Returns if the pawn is anywhere between the leftmost and the rightmost columns
+    private boolean isAtMiddleH() {
+    	if (getCurrentPawnColumn() > 1 && getCurrentPawnColumn() < 9) {    	
+    		return true;
+    	} else return false;
+    }
+    
+ 	// Returns if the pawn is at the lowest row on the board
+    private boolean isAtDownBorder() {
+    	if (getCurrentPawnRow() == 9) {
+    		return true;
+    	} else return false;
+    }
+    
+    // Returns if the pawn is at the highest row on the board
+    private boolean isAtUpBorder() {
+		if (getCurrentPawnRow() == 1) {
+    		return true;
+    	} else return false;    }
+    
+    // Returns if the pawn is anywhere between the lowest and the highest rows
+    private boolean isAtMiddleV() {
+  	   if (getCurrentPawnRow() > 1 && getCurrentPawnRow() < 9) {
+    		return true;
+    	} else return false;
+  	
+    }
+    
+    
+    /**************************************/
+    /* ACTIONS 							  */					  
+    /**************************************/
+    
+    // Action to be called when an illegal move is attempted
+    private void illegalMove() {
+    	//System.out.println("===Illegal!");
+		BoardPanel.displayError("Illegal Move!");
+		illegal = true; //For testing in step definitions
+		
+	}
+	
+    // Action to be called when a step move is legal
+    private void step(MoveDirection moveDirection) {
+    
+    	QuoridorController.stepMove(moveDirection);
+    	BoardPanel.clearError();
+    	illegal = false; // For testing in step definitions
+    	
+    }
+    
+    private void jump(MoveDirection moveDirection) { 
+    	QuoridorController.jumpMove(moveDirection);
+    	BoardPanel.clearError();
+    	illegal = false; // For testing in step definitions
+    	
+    }
+    
+	private void diagonalJump(MoveDirection vDirection, MoveDirection hDirection) {
+		//System.out.println("====diagJump: " + vDirection + " " + hDirection);
+		QuoridorController.diagonalJumpMove(vDirection,hDirection);
+		BoardPanel.clearError();
+		illegal = false; // For testing in step definitions
+		
+	}
+    
+    
+    /**************************************/
+    /* MISC				  				  */					  
+    /**************************************/
+     
+	// Enumeration for the possible moving directions
+	// (directions are from the viewpoint of white player)
+	enum MoveDirection { East, South, West, North }
+	
+}
