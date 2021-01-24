@@ -1,3 +1,3 @@
 # Ecse223-project--group-11
-Quoridor Application
+Quoridor Game
 
